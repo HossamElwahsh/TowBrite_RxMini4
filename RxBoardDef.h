@@ -1,7 +1,7 @@
 #ifndef RXBOARDDEF_H
 #define RXBOARDDEF_H
 
-#define PROGRAMM_VERSION        2
+#define PROGRAMM_VERSION        3
 
 #define MY_MAC_ADDRESS           0x847BA8C0 
 #define TAG_MAC_ADDRESS          0x98765432
@@ -19,7 +19,7 @@
 #define ACC_25_PERCENT          738
 #define ACC_50_PERCENT          750
 #define ACC_75_PERCENT          760
-#define FLASHING_DELAY          130000                                          // value for 500 ms delay if Fclk = 26 MHz
+#define FLASHING_DELAY          60000                                          // 130k value for 500 ms delay if Fclk = 26 MHz
 
 #define RIGHT_TURN_SIGNAL       0x02
 #define BACK_SIGNAL             0x04
