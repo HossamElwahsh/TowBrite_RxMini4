@@ -1,0 +1,11 @@
+/+Old/
+/cmake-build-debug/
+/Debug/
+/Release/
+*.map
+*.pbw
+*.tmp
+.idea
+*.log
+settings
+*.ffs_db
