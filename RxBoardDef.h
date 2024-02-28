@@ -4,7 +4,7 @@
 #define PROGRAMM_VERSION        3
 
 #define MY_MAC_ADDRESS           0x847BA8C0 
-#define TAG_MAC_ADDRESS          0x98765432
+#define TAG_MAC_ADDRESS          0x98765432 /* destination for heartbeat address */
 
 #define LED_TXRX                0x01
 #define LED_PAIR                0x02
