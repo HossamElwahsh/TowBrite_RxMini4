@@ -15,6 +15,9 @@
 #include "RADIO_CC1110_GFSK.h"
 #include "RxBoardDef.h"
 
+/** global variables */
+uint16_t gl_u16_pair_timeout = TIME_PAIRING_ALLOWED_10MS;
+
 /*******************************************************************************
 * LOCAL FUNCTIONS
 */
@@ -84,10 +87,20 @@ __interrupt void RFTXRX_ISR (void) {
 /********************************************************************************************************
  *  HANDLER FOR TIMER1 INTERRUPT
  ********************************************************************************************************/
+/* runs every 10ms */
 #pragma vector = T1_VECTOR
 __interrupt void T1_ISR (void) {
   
   sysTick ++;
+
+  if(!Flags.RF_DEVICE_PAIRED)
+  {
+      if(gl_u16_pair_timeout)
+      {
+          gl_u16_pair_timeout--;
+      }
+  }
+
 }
 
 /********************************************************************************************************
@@ -191,13 +204,20 @@ static TParseStatus packetParse(void){
   if(*pDestAddr != MY_MAC_ADDRESS) return PS_ERROR;                            
   if(rfPacket->data_0 != rfPacket->data_1) return PS_ERROR;
   
-  if(*pSrcAddrBuf == *pSrcAddr) return PS_NO_ERROR;
+  if(*pSrcAddrBuf == *pSrcAddr) {
+      Flags.RF_DEVICE_PAIRED = 1; /* set to paired */
+      return PS_NO_ERROR;
+  }
+
   if(Flags.RF_DEVICE_PAIRED)    return PS_ERROR;  
-  
-  if(rfPacket->data_1 & LEFT_TURN_SIGNAL){                                      // if the source address is not equal to the destination address, but signal is LEFT_TURN_SIGNAL
-        *pSrcAddrBuf = *pSrcAddr;                                               // remember new source address
+
+  if(!gl_u16_pair_timeout) return PS_ERROR;                         /* block pairing if pair time has passed */
+
+  if(rfPacket->data_1 & LEFT_TURN_SIGNAL)                           // if the source address is not equal to the destination address, but signal is LEFT_TURN_SIGNAL
+  {
+        *pSrcAddrBuf = *pSrcAddr;                                   // remember new source address
         return PS_PAIR_ADDRESS;
-   } 
+  }
   return PS_ERROR;  
 }
 
@@ -450,8 +470,8 @@ void readTxAddrFromFlash(uint32_t* pTxAddr, uint32_t* pFlashAddr){
         } else {i = 0;}	      
       }
   }
-  if(storeTxAddrCount != 0) Flags.RF_DEVICE_PAIRED = 1;
-  else Flags.RF_DEVICE_PAIRED = 0;
+//  if(storeTxAddrCount != 0) Flags.RF_DEVICE_PAIRED = 1;
+//  else Flags.RF_DEVICE_PAIRED = 0;
 }
 /***********************************************************************************************************
 * @fn          runFunctionFromRam

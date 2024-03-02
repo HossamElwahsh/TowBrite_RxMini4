@@ -31,6 +31,9 @@
 #define SYSMODE_RX              0
 #define SYSMODE_TX              1
 
+/* time to allow pairing at startup */
+#define TIME_PAIRING_ALLOWED_10MS 1500 /* (in 10ms counts) therefore (1500) * 10ms = 15,000 = 15s */
+
 #define ERASED_PAGE             7
 #define PAGE_SIZE               1024
 #define FLASH_PAGE_ADDR         (uint16_t)(ERASED_PAGE * PAGE_SIZE)
