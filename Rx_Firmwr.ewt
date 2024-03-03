@@ -2155,6 +2155,21 @@
             </data>
         </settings>
     </configuration>
+    <group>
+        <name>wdt</name>
+        <file>
+            <name>$PROJ_DIR$\MCAL\wdt\wdt_config.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\MCAL\wdt\wdt_interface.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\MCAL\wdt\wdt_private.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\MCAL\wdt\wdt_program.c</name>
+        </file>
+    </group>
     <file>
         <name>$PROJ_DIR$\flash_asm.s51</name>
     </file>
