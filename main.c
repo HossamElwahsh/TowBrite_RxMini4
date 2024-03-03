@@ -14,6 +14,7 @@
 #include "ioCCxx10_bitdef.h"
 #include "RADIO_CC1110_GFSK.h"
 #include "RxBoardDef.h"
+#include "MCAL/wdt/wdt_interface.h"
 
 /** global variables */
 uint16_t gl_u16_pair_timeout = TIME_PAIRING_ALLOWED_10MS;
@@ -239,9 +240,16 @@ int main( void )
   radioInit();                                                                  
   systemStart();
   sysMode2RXWait();
-  
+
+  /* init watchdog */
+  wdt_init();
+
   tempCnt = 0;
   while(1){
+
+      /* reset watchdog */
+      wdt_reset();
+
       LEDPairIndicationHandler();
       switch(sysMode)
       {

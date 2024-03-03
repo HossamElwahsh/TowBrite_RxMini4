@@ -12,4 +12,11 @@ add_executable(RX_2024
         ioCCxx10_bitdef.h
         main.c
         RADIO_CC1110_GFSK.h
-        RxBoardDef.h)
+        RxBoardDef.h
+
+        MCAL/wdt/wdt_program.c
+        MCAL/wdt/wdt_config.h
+        MCAL/wdt/wdt_interface.h
+        MCAL/wdt/wdt_private.h
+
+)
