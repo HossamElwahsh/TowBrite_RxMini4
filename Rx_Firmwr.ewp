@@ -739,7 +739,7 @@
             <archiveVersion>1</archiveVersion>
             <data>
                 <prebuild></prebuild>
-                <postbuild>C:\Users\encoad\Desktop\RX_Standard_2024\script\post_build.bat</postbuild>
+                <postbuild>C:\TowBrite\new\new-rx-standard\script\post_build.bat</postbuild>
             </data>
         </settings>
         <settings>
