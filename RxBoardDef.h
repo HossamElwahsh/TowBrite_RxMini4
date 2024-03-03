@@ -3,8 +3,8 @@
 
 #define PROGRAMM_VERSION        3
 
-#define MY_MAC_ADDRESS           0x847BA8C0 
-#define TAG_MAC_ADDRESS          0x98765432 /* destination for heartbeat address */
+//#define MY_MAC_ADDRESS           0x847BA8C0  /* moved to selfAddress[] below | oldTodo> change to random (new RX) and drop verification on signal destination */
+#define NOTIFIER_TAG_MAC_ADDRESS          0x98765432 /* destination for heartbeat address - >>constant<< - matching notifier chip address */
 
 #define LED_TXRX                0x01
 #define LED_PAIR                0x02
@@ -39,6 +39,8 @@
 #define FLASH_PAGE_ADDR         (uint16_t)(ERASED_PAGE * PAGE_SIZE)
 __no_init const uint8_t __code flashDataAddr[PAGE_SIZE] @FLASH_PAGE_ADDR;       // The area in flash where data written to flash will be placed.
 
+/* self address - page 9 */
+static const uint8_t selfAddress[] @0x2400 = {0xEF, 0xBE, 0xAD, 0xDE};
 
 #define RAM_BUF_SIZE            128
 

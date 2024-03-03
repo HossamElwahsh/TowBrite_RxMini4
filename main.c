@@ -55,12 +55,18 @@ static void LEDPairIndicationHandler(void)
 
 static void generateNewHeartPacket(void)
 {
-   uint32_t* pSrcAddr    = (uint32_t*)&rfPacket->srcAddr;
+//   uint32_t* pSrcAddr    = (uint32_t*)&rfPacket->srcAddr;
    uint32_t* pDestAddr   = (uint32_t*)&rfPacket->dstAddr;
     rfPacket->data_0 = HEART_BIT_SIGNAL;
     rfPacket->data_1 = HEART_BIT_SIGNAL;
-   *pSrcAddr    = MY_MAC_ADDRESS;
-   *pDestAddr   = TAG_MAC_ADDRESS;
+//   *pSrcAddr    = MY_MAC_ADDRESS;
+
+    rfPacket->srcAddr[0] = selfAddress[0];
+    rfPacket->srcAddr[1] = selfAddress[1];
+    rfPacket->srcAddr[2] = selfAddress[2];
+    rfPacket->srcAddr[3] = selfAddress[3];
+
+    *pDestAddr   = NOTIFIER_TAG_MAC_ADDRESS;
 }
 
 
@@ -126,11 +132,17 @@ __interrupt void RF_ISR (void) {
 
  static void updateTrasnmitDataPacket(void)
  {
-   uint32_t* pSrcAddr    = (uint32_t*)&rfPacket->srcAddr;
-   uint32_t* pDestAddr   = (uint32_t*)&rfPacket->dstAddr;
-   
-   *pSrcAddr    = MY_MAC_ADDRESS;
-   *pDestAddr   = TAG_MAC_ADDRESS;
+//   uint32_t* pSrcAddr    = (uint32_t*)&rfPacket->srcAddr;
+     uint32_t *pDestAddr = (uint32_t *) &rfPacket->dstAddr;
+
+//   *pSrcAddr    = MY_MAC_ADDRESS;
+
+     rfPacket->srcAddr[0] = selfAddress[0];
+     rfPacket->srcAddr[1] = selfAddress[1];
+     rfPacket->srcAddr[2] = selfAddress[2];
+     rfPacket->srcAddr[3] = selfAddress[3];
+
+     *pDestAddr = NOTIFIER_TAG_MAC_ADDRESS;
  }
  static void updatePairedFlag(void)
  {
@@ -202,7 +214,7 @@ static TParseStatus packetParse(void){
   uint32_t* pDestAddr   = (uint32_t*)&rfPacket->dstAddr;
  
   if((LQI & 0x80) == 0)            return PS_ERROR;                           
-  if(*pDestAddr != MY_MAC_ADDRESS) return PS_ERROR;                            
+//  if(*pDestAddr != MY_MAC_ADDRESS) return PS_ERROR;
   if(rfPacket->data_0 != rfPacket->data_1) return PS_ERROR;
   
   if(*pSrcAddrBuf == *pSrcAddr) {
