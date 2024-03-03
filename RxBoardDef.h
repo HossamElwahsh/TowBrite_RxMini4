@@ -47,7 +47,7 @@ __no_init const uint8_t __code flashDataAddr[PAGE_SIZE] @FLASH_PAGE_ADDR;       
 
 /** static flash code */
 /* default source pair address */
-static const uint8_t __code selfAddress[PAGE_SIZE] @FLASH_SELF_PAGE_ADDR = {DEFAULT_PAIR_ADDRESS};
+static const uint8_t __code selfAddress[] @FLASH_SELF_PAGE_ADDR = {DEFAULT_PAIR_ADDRESS};
 
 ///* self address - page 9 */
 //static const uint8_t selfAddress[] @0x2400 = {0xEF, 0xBE, 0xAD, 0xDE};
