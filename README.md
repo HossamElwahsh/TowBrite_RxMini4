@@ -1,4 +1,4 @@
-# RX-Standard
+# RX-Standard (New)
 
 ### Summary
 This project involves updating the RX chip heartbeat signal from 60s down to 5s as well as compatibility with older models and other improvements
