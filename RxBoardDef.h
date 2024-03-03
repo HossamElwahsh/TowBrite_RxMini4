@@ -39,8 +39,18 @@
 #define FLASH_PAGE_ADDR         (uint16_t)(ERASED_PAGE * PAGE_SIZE)
 __no_init const uint8_t __code flashDataAddr[PAGE_SIZE] @FLASH_PAGE_ADDR;       // The area in flash where data written to flash will be placed.
 
-/* self address - page 9 */
-static const uint8_t selfAddress[] @0x2400 = {0xEF, 0xBE, 0xAD, 0xDE};
+
+#define DEFAULT_PAIR_ADDRESS                    0xEF, 0xBE, 0xAD, 0xDE
+#define FLASH_SELF_PAGE_ADDR  0x5000  /** start of page 20 - must be a start of a page */
+
+//__no_init const uint8_t __code flashDataAddr[PAGE_SIZE] @FLASH_PAGE_ADDR;       // The area in flash where data written to flash will be placed.
+
+/** static flash code */
+/* default source pair address */
+static const uint8_t __code selfAddress[PAGE_SIZE] @FLASH_SELF_PAGE_ADDR = {DEFAULT_PAIR_ADDRESS};
+
+///* self address - page 9 */
+//static const uint8_t selfAddress[] @0x2400 = {0xEF, 0xBE, 0xAD, 0xDE};
 
 #define RAM_BUF_SIZE            128
 
