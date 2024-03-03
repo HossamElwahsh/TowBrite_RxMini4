@@ -40,4 +40,4 @@ Just open and compile using `IAR IDE for 8051` normally
     | Address                                             | Data                                                       |
     |-----------------------------------------------------|------------------------------------------------------------|
     | **0x1C00** <br> might be at the<br>end of this page | Paired address of sender to me (src) - (Random TX address) |
-    | **0x2400**                                          | self address                                               |
+    | **0x5000** (page 20)                                | self address                                               |
