@@ -191,6 +191,7 @@ static void sysMode2RXWait(void)
 }
 static void sysMode2RXDelay(void)
 {
+  wdt_reset();
   sysTickBuf = sysTick;
   sysMode    = SYSMODE_RX_DELAY;
   diableRFInterrupts();
@@ -210,7 +211,9 @@ static void rssiChange(void)
  *  CHECK RECEIVED PACKET
  ********************************************************************************************************/
 static TParseStatus packetParse(void){
- 
+
+  wdt_reset();
+
   uint32_t* pSrcAddrBuf = (uint32_t*)transmitterAddress;                           // set pointers to destination and source addresses
   uint32_t* pSrcAddr    = (uint32_t*)&rfPacket->srcAddr;
   uint32_t* pDestAddr   = (uint32_t*)&rfPacket->dstAddr;
@@ -262,7 +265,7 @@ int main( void )
   while(1){
 
       /* reset watchdog */
-//      wdt_reset();
+      wdt_reset();
 
       LEDPairIndicationHandler();
       switch(sysMode)
