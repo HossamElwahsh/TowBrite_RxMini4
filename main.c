@@ -108,10 +108,7 @@ __interrupt void T1_ISR (void) {
       }
   }
 
-  if(sysTick % 20 == 0)
-  {
-      wdt_reset();
-  }
+  wdt_reset();
 
 }
 
