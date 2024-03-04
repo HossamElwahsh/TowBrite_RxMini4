@@ -108,7 +108,7 @@ __interrupt void T1_ISR (void) {
       }
   }
 
-  wdt_reset();
+//  wdt_reset();
 
 }
 
@@ -191,7 +191,7 @@ static void sysMode2RXWait(void)
 }
 static void sysMode2RXDelay(void)
 {
-  wdt_reset();
+//  wdt_reset();
   sysTickBuf = sysTick;
   sysMode    = SYSMODE_RX_DELAY;
   diableRFInterrupts();
@@ -212,7 +212,7 @@ static void rssiChange(void)
  ********************************************************************************************************/
 static TParseStatus packetParse(void){
 
-  wdt_reset();
+//  wdt_reset();
 
   uint32_t* pSrcAddrBuf = (uint32_t*)transmitterAddress;                           // set pointers to destination and source addresses
   uint32_t* pSrcAddr    = (uint32_t*)&rfPacket->srcAddr;
@@ -259,13 +259,13 @@ int main( void )
   sysMode2RXWait();
 
   /* init watchdog */
-  wdt_init();
+//  wdt_init();
 
   tempCnt = 0;
   while(1){
 
       /* reset watchdog */
-      wdt_reset();
+//      wdt_reset();
 
       LEDPairIndicationHandler();
       switch(sysMode)
