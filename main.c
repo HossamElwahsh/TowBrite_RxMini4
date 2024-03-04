@@ -377,12 +377,12 @@ void setSystemClock(void){
  *  INIT MCU PINS
  ********************************************************************************************************/
 void mcuPinInit(void){
- 
-  P1DIR |= LED_TXRX | LED_PAIR | ACC_VCNTRL;                                    // set pins for leds and control ACC as outputs
-  P1 &= ~ACC_VCNTRL;                                                            // set LOW on ACC_VCNTRL pin
 
-  P0DIR |= (RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL); // set pins for light signals as outputs
-  P0 &= ~(RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL);   // set LOW for light signals;
+    P1 &= ~ACC_VCNTRL;                                                            // set LOW on ACC_VCNTRL pin
+    P1DIR |= LED_TXRX | LED_PAIR | ACC_VCNTRL;                                    // set pins for leds and control ACC as outputs
+
+    P0 &= ~(RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL);   // set LOW for light signals;
+    P0DIR |= (RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL); // set pins for light signals as outputs
 }
 
 
