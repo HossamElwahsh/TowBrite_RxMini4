@@ -108,6 +108,11 @@ __interrupt void T1_ISR (void) {
       }
   }
 
+  if(sysTick % 20 == 0)
+  {
+      wdt_reset();
+  }
+
 }
 
 /********************************************************************************************************
@@ -260,7 +265,7 @@ int main( void )
   while(1){
 
       /* reset watchdog */
-      wdt_reset();
+//      wdt_reset();
 
       LEDPairIndicationHandler();
       switch(sysMode)
