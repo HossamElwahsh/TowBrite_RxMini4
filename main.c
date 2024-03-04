@@ -259,7 +259,7 @@ int main( void )
   sysMode2RXWait();
 
   /* init watchdog */
-  //wdt_init();
+  wdt_init();
 
   tempCnt = 0;
   while(1){
