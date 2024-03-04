@@ -254,12 +254,14 @@ int main( void )
     watchdogReset = 0;
   }
   readTxAddrFromFlash((uint32_t*)transmitterAddress, (uint32_t*)flashDataAddr); 
-  radioInit();                                                                  
+  radioInit();
+
+
+    /* init watchdog */
+//  wdt_init();
+
   systemStart();
   sysMode2RXWait();
-
-  /* init watchdog */
-//  wdt_init();
 
   tempCnt = 0;
   while(1){
@@ -378,11 +380,11 @@ void setSystemClock(void){
  ********************************************************************************************************/
 void mcuPinInit(void){
 
-    P1 &= ~ACC_VCNTRL;                                                            // set LOW on ACC_VCNTRL pin
     P1DIR |= LED_TXRX | LED_PAIR | ACC_VCNTRL;                                    // set pins for leds and control ACC as outputs
+    P1 &= ~ACC_VCNTRL;                                                            // set LOW on ACC_VCNTRL pin
 
-    P0 &= ~(RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL);   // set LOW for light signals;
     P0DIR |= (RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL); // set pins for light signals as outputs
+    P0 &= ~(RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL);   // set LOW for light signals;
 }
 
 
