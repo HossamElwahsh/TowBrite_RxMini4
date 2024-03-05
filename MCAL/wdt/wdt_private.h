@@ -13,7 +13,5 @@
 
 #define WDT_RST_KEY_STEP_1            (0xA0)
 #define WDT_RST_KEY_STEP_2            (0x50)
-//#define WDT_RST_KEY_STEP_1            (0xA8)
-//#define WDT_RST_KEY_STEP_2            (0x58)
 
 #endif //WDT_PRIVATE_H

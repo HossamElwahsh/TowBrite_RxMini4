@@ -256,14 +256,13 @@ int main( void )
   readTxAddrFromFlash((uint32_t*)transmitterAddress, (uint32_t*)flashDataAddr); 
   radioInit();
 
-
-    /* init watchdog */
-  wdt_init();
-
   systemStart();
   sysMode2RXWait();
 
-  tempCnt = 0;
+    /* init watchdog */
+    wdt_init();
+
+    tempCnt = 0;
   while(1){
 
       /* reset watchdog */

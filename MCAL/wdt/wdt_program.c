@@ -23,6 +23,6 @@ void wdt_init(void)
 void wdt_reset(void)
 {
     /* reset sequence for watchdog */
-    WDCTL |= WDT_RST_KEY_STEP_1;
-    WDCTL |= WDT_RST_KEY_STEP_2;
+    WDCTL = (WDCTL & 0x0F) | WDT_RST_KEY_STEP_1; /* higher nibble for reset key - lower nibble as is */
+    WDCTL = (WDCTL & 0x0F) | WDT_RST_KEY_STEP_2;
 }
