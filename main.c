@@ -108,7 +108,7 @@ __interrupt void T1_ISR (void) {
       }
   }
 
-//  wdt_reset();
+  wdt_reset();
 
 }
 
@@ -258,7 +258,7 @@ int main( void )
 
 
     /* init watchdog */
-//  wdt_init();
+  wdt_init();
 
   systemStart();
   sysMode2RXWait();
@@ -367,13 +367,18 @@ int main( void )
 ********************************************************************************************************/
 void setSystemClock(void){
 
-  watchdogReset = SLEEP & WATCHDOG_MSK;
+  watchdogReset = SLEEP & WATCHDOG_MSK; /* 1 if last reset was due to watchdog */
   /*** Set system clock source to HS XOSC, with no pre-scaling ***/
-  SLEEP &= ~SLEEP_OSC_PD;
-  while( !(SLEEP & SLEEP_XOSC_S) );
-  CLKCON = (CLKCON & ~(CLKCON_TICKSPD | CLKCON_CLKSPD | CLKCON_OSC)) | TICKSPD_DIV_16;
-  while (CLKCON & CLKCON_OSC);
-  SLEEP |= SLEEP_OSC_PD;
+  SLEEP &= ~SLEEP_OSC_PD;           /* requesting both oscillators up */
+  while( !(SLEEP & SLEEP_XOSC_S) ); /* checking high speed OSC is powered up */
+
+  /* update watchdog crystal source to high-speed stable crystal osc 32.768 kHz */
+  while(!(SLEEP & SLEEP_HFRC_S)); /* check HS RCOSC stable before changing OSC32 bit */
+  CLKCON = (CLKCON & ~(CLKCON_OSC32)); /* enable 32.768kHz crystal */
+
+  CLKCON = (CLKCON & ~(CLKCON_TICKSPD | CLKCON_CLKSPD | CLKCON_OSC)) | TICKSPD_DIV_16; /* adjust clock - choose HS-X (crystal) */
+  while (CLKCON & CLKCON_OSC);      /* wait for oscillator calibration to be finished */
+  SLEEP |= SLEEP_OSC_PD;            /* power down oscillators not selected by CLKCON.OSC */
 }
 /********************************************************************************************************
  *  INIT MCU PINS
