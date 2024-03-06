@@ -262,7 +262,6 @@ int main( void )
     /* init watchdog */
     wdt_init();
 
-    tempCnt = 0;
   while(1){
 
       /* reset watchdog */
@@ -334,7 +333,6 @@ int main( void )
             Flags.RF_PACKET_DONE = 0;
             sysTickBuf = sysTick;
             sysMode2RXWait();
-            tempCnt ++;
           }
           if(Flags.RF_PACKET_ERROR){ 
             Flags.RF_PACKET_ERROR = 0;  
@@ -354,7 +352,6 @@ int main( void )
           break;
         }    
       if((sysTickBuf + 60) < sysTick) P0 &= ~ALL_SIGNAL; // off;
-      if(tempCnt > 10000) while(1){;}
   }
       
 }

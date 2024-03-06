@@ -109,9 +109,6 @@ uint32_t           sysTickBuf;
 uint8_t            blinkMask;
 uint8_t            transRtry;
 
-uint32_t tempCnt;
-
-
 uint16_t accVoltage;
 uint8_t  transmitterAddress[4];
 uint8_t  rfdCount;
