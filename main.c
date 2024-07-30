@@ -19,6 +19,7 @@ uint16_t gl_u16_pair_timeout = TIME_PAIRING_ALLOWED_10MS;
 uint16_t gl_u16_follow_change_timeout = TIME_ALLOWED_MAGNETIC_CHANGE_10MS;
 uint16_t gl_u16_hold_counter_for_magnetic_switch = TIME_HOLD_REQ_FOR_MAGNETIC_CHANGE_10MS;
 un_mag_app_mode_t un_gl_mag_app_mode;
+uint8_t u8_gl_mag_follow_bit_num = APP_MAG_RECEIVED_DEFAULT_BIT_POS;
 en_magnet_status_t en_gl_current_magnet_status = MAGNET_STATUS_NOT_PRESENT; // todo initialize from realtime reading
 boolean bool_gl_switch_mode_required = FALSE;
 
@@ -94,7 +95,10 @@ static void generateNewHeartPacket(void)
 #pragma vector = RFTXRX_VECTOR
 __interrupt void RFTXRX_ISR (void) {
 
-  P1 &= ~LED_TXRX;
+#if PROJECT_TYPE_CFG != PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
+    P1 &= ~LED_TXRX;
+#endif
+
   switch(sysMode)
   {
   case SYSMODE_RX_WAIT:
@@ -164,7 +168,9 @@ __interrupt void T1_ISR (void) {
 __interrupt void RF_ISR (void) {
   
   S1CON &= ~S1CON_RFIF_FLAGS;                                                   // Clear CPU interrupt flag
+#if PROJECT_TYPE_CFG != PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
   P1 |= LED_TXRX;
+#endif
   if(RFIF & (RFIF_IRQ_RXOVF | RFIF_IRQ_TXUNF ))                                 // if RX OVERFLOW or TX UNDERFLOW flag is present
   {                                
     Flags.RF_PACKET_ERROR = 1;                                                  // set packet error flag
@@ -333,7 +339,9 @@ int main( void )
 #endif
 
 
+#if PROJECT_TYPE_CFG != PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
       LEDPairIndicationHandler();
+#endif
       switch(sysMode)
       {
         case SYSMODE_RX_WAIT:
@@ -347,8 +355,13 @@ int main( void )
                  storeNewTxToFlash();  
              case PS_NO_ERROR:
                  sysMode2RXDelay();
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE_OPT
                  P0 &= ~ALL_SIGNAL; // off;
                  P0 |= rfPacket->data_0;
+#elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
+                 CLR_BIT(LED_MAIN_OUTPUT_PORT, LED_MAIN_OUTPUT_PIN);
+                 WRITE_BIT(LED_MAIN_OUTPUT_PORT, LED_MAIN_OUTPUT_PIN, GET_BIT((rfPacket->data_0), u8_gl_mag_follow_bit_num));
+#endif
                  transRtry = 3;
                break;
              default:
@@ -417,7 +430,14 @@ int main( void )
             sysMode2RXWait();
           break;
         }    
-      if((sysTickBuf + 60) < sysTick) P0 &= ~ALL_SIGNAL; // off;
+      if((sysTickBuf + 60) < sysTick)
+      {
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE_OPT
+          P0 &= ~ALL_SIGNAL; // off;
+#elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
+          CLR_BIT(LED_MAIN_OUTPUT_PORT, LED_MAIN_OUTPUT_PIN);
+#endif
+      }
   }
       
 }
@@ -664,14 +684,31 @@ void accumVoltageIndication(void){
     flashCount = 3;
   } 
   
-  uint32_t delay = FLASHING_DELAY;                                                    
-  while (flashCount){
-    P0 |= RIGHT_TURN_SIGNAL;                                                     // RIGHT_TURN on;     
+  uint32_t delay = FLASHING_DELAY;
+
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE_OPT
+
+    while (flashCount){
+    P0 |= RIGHT_TURN_SIGNAL;                                                     // RIGHT_TURN on;
     while(delay){delay--;}
-    P0 &= ~RIGHT_TURN_SIGNAL;                                                    // RIGHT_TURN off     
+    P0 &= ~RIGHT_TURN_SIGNAL;                                                    // RIGHT_TURN off
     while(delay < FLASHING_DELAY){delay++;}
     flashCount--;
   }
+
+#elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
+
+    while (flashCount){
+        LED_MAIN_OUTPUT_PORT |= LED_MAIN_OUTPUT_PIN_MASK;      // Main LED on;
+        while(delay){delay--;}
+        LED_MAIN_OUTPUT_PORT &= ~LED_MAIN_OUTPUT_PIN_MASK;     // Main LED off
+        while(delay < FLASHING_DELAY){delay++;}
+        flashCount--;
+    }
+
+#endif
+
+
 }
 
 /********************************************************************************************************
@@ -679,20 +716,43 @@ void accumVoltageIndication(void){
  ********************************************************************************************************/
 void programVersionIndication(void){
 
-  uint32_t delay = FLASHING_DELAY * 2; 
-  P0 |= RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL;      // all lamps on 
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE_OPT
+
+  uint32_t delay = FLASHING_DELAY * 2;
+  P0 |= RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL;      // all lamps on
   while(delay){delay--;}
-  P0 &= ~(RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL);   // all lamps off     
-  while(delay < FLASHING_DELAY){delay++;}  
-  
+  P0 &= ~(RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL);   // all lamps off
+  while(delay < FLASHING_DELAY){delay++;}
+
   uint16_t version = PROGRAMM_VERSION;
-  while (version){
-    P0 |= LEFT_TURN_SIGNAL;                                                     // LEFT_TURN on;     
+
+    while (version){
+    P0 |= LEFT_TURN_SIGNAL;                                                     // LEFT_TURN on;
     while(delay){delay--;}
-    P0 &= ~LEFT_TURN_SIGNAL;                                                    // LEFT_TURN off     
+    P0 &= ~LEFT_TURN_SIGNAL;                                                    // LEFT_TURN off
     while(delay < FLASHING_DELAY){delay++;}
     version--;
   }
+
+#elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
+
+    uint32_t delay = FLASHING_DELAY * 2;
+    LED_MAIN_OUTPUT_PORT |= LED_MAIN_OUTPUT_PIN_MASK;      // all lamps on
+    while(delay){delay--;}
+    LED_MAIN_OUTPUT_PORT &= ~LED_MAIN_OUTPUT_PIN_MASK;   // all lamps off
+    while(delay < FLASHING_DELAY){delay++;}
+
+    uint16_t version = PROGRAMM_VERSION;
+
+    while (version){
+        LED_MAIN_OUTPUT_PORT |= LED_MAIN_OUTPUT_PIN_MASK;                // LEFT_TURN on;
+        while(delay){delay--;}
+        LED_MAIN_OUTPUT_PORT &= ~LED_MAIN_OUTPUT_PIN_MASK;               // LEFT_TURN off
+        while(delay < FLASHING_DELAY){delay++;}
+        version--;
+    }
+
+#endif
 }
 
 //region Special Board Flavors Functions
@@ -879,11 +939,16 @@ static void update_magnetic_mode_ui()
     {
         CLR_BIT(IND_LED_MODE_LEFT_PORT, IND_LED_MODE_LEFT_PIN);
         SET_BIT(IND_LED_MODE_RIGHT_PORT, IND_LED_MODE_RIGHT_PIN);
+
+        u8_gl_mag_follow_bit_num = APP_MAG_RECEIVED_RIGHT_BIT_POS;
     }
+
     else if(APP_MAGNETIC_MODE_FOLLOW_LEFT == un_gl_mag_app_mode.u16_app_mode)
     {
         CLR_BIT(IND_LED_MODE_RIGHT_PORT, IND_LED_MODE_RIGHT_PIN);
         SET_BIT(IND_LED_MODE_LEFT_PORT, IND_LED_MODE_LEFT_PIN);
+
+        u8_gl_mag_follow_bit_num = APP_MAG_RECEIVED_LEFT_BIT_POS;
     }
 }
 

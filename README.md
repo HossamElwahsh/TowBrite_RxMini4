@@ -59,3 +59,13 @@ Configurations for this can be found in `app_magnetic_cfg.h`
     | **0x1C00** <br> might be at the<br>end of this page | Paired address of sender to me (src) - (Random TX address)                                         |
     | **0x5000** (page 20)                                | self address                                                                                       |
     | **0x5400** (page 21)                                | app data, first byte: current magnetic app follow mode, (follow right signal / follow left signal) |
+
+
+- ### Input (Received) Signals - 1 RF Byte
+  | Signal  | Pin (in byte)     |
+  |---------|-------------------|
+  | Right   | 1 (compatibility) |
+  | Reverse | 2                 |
+  | Brake   | 3                 |
+  | Left    | 4                 |
+  | Right   | 5 (original)      |
