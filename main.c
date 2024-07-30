@@ -963,7 +963,7 @@ __interrupt void P0_ISR (void) {
     if(GET_BIT(P0IFG, PROX_SENSOR_PIN))
     {
         // process mag sensor pin
-        en_gl_current_magnet_status = GET_MAGNETIC_SENSOR_STATUS();
+        en_gl_current_magnet_status = (en_magnet_status_t) GET_MAGNETIC_SENSOR_STATUS();
 
         if(INT_FALLING_EDGE == en_gl_current_mag_sensor_interrupt_mode)
         {
