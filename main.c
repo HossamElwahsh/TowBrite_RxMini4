@@ -9,20 +9,33 @@
   Should you have any questions to use this Software, contact e-mail: goodbug@ukr.net
 **************************************************************************************************/
 
-#include "ioCC1110.h"
-#include "hal_types.h"
-#include "ioCCxx10_bitdef.h"
-#include "RADIO_CC1110_GFSK.h"
+
 #include "RxBoardDef.h"
-#include "MCAL/wdt/wdt_interface.h"
 
 /** global variables */
 uint16_t gl_u16_pair_timeout = TIME_PAIRING_ALLOWED_10MS;
 
-#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY
-uint16_t gl_u16_follow_change_timeout = TIME_ALLOWED_PROX_CHANGE_10MS;
-en_follow_mode_t en_gl_follow_mode = FOLLOW_RIGHT_SIG; /* default */
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
+uint16_t gl_u16_follow_change_timeout = TIME_ALLOWED_MAGNETIC_CHANGE_10MS;
+uint16_t gl_u16_hold_counter_for_magnetic_switch = TIME_HOLD_REQ_FOR_MAGNETIC_CHANGE_10MS;
+un_mag_app_mode_t un_gl_mag_app_mode;
 en_magnet_status_t en_gl_current_magnet_status = MAGNET_STATUS_NOT_PRESENT; // todo initialize from realtime reading
+boolean bool_gl_switch_mode_required = FALSE;
+
+/** dma config - saved in XDATA region */
+static __xdata DMA_DESC dma0_config;
+static __xdata uint8_t data_to_flash[APP_MAGNETIC_MODE_SIZE_IN_BYTES];
+
+
+/** initializes app defaults for global variables/flags if any
+ * - after initializing all peripherals*/
+static void app_defaults_init()
+{
+    un_gl_mag_app_mode = APP_MODE_DEFAULT; /* default */
+
+    data_to_flash[0] = un_gl_mag_app_mode.st_app_mode_bytes.low_byte;
+    data_to_flash[1] = un_gl_mag_app_mode.st_app_mode_bytes.high_byte;
+}
 #endif
 /*******************************************************************************
 * LOCAL FUNCTIONS
@@ -116,6 +129,29 @@ __interrupt void T1_ISR (void) {
   if(gl_u16_follow_change_timeout)
   {
       gl_u16_follow_change_timeout--;
+
+      if(ZERO == gl_u16_follow_change_timeout)
+      {
+          // disable mode magnetic switching interrupt (timeout)
+          DISABLE_INT_P0();
+      }
+  }
+
+  if(MAGNET_STATUS_PRESENT == en_gl_current_magnet_status)
+  {
+      if(gl_u16_hold_counter_for_magnetic_switch)
+      {
+          gl_u16_hold_counter_for_magnetic_switch--;
+
+          if(ZERO == gl_u16_follow_change_timeout)
+          {
+              // turn off interrupts
+              DISABLE_INT_P0();
+
+              // switch mode
+              bool_gl_switch_mode_required = TRUE;
+          }
+      }
   }
 
   wdt_reset();
@@ -255,6 +291,7 @@ int main( void )
 {
   setSystemClock();
   mcuPinInit();
+  init_magnetic_sensor_interrupts();
   adcInit();
   if(watchdogReset == 0){
     programVersionIndication();                                                // all lamp ON for control and LEFT_TURN flashing for version indication
@@ -269,17 +306,32 @@ int main( void )
   sysMode2RXWait();
 
     /* init watchdog */
-    wdt_init();
+    //wdt_init();
+
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
+    app_defaults_init();
+    dma0_init();
+
+    RESTORE_APP_MODE();
+
+    /* enable global interrupts */
+    IEN0 |= IEN0_EA;                                                              // enable global interrupt
+#endif
 
   while(1){
 
       /* reset watchdog */
 //      wdt_reset();
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
     while(1)
     {
-        boolean bool_l_magnet_state = GET_PROX_SENSOR_STATUS();
+        boolean bool_l_magnet_state = GET_MAGNETIC_SENSOR_STATUS();
         boolean test = 5;
+
+        if(bool_gl_switch_mode_required) app_switch_follow_signal();
     }
+#endif
+
 
       LEDPairIndicationHandler();
       switch(sysMode)
@@ -395,7 +447,7 @@ void setSystemClock(void){
  ********************************************************************************************************/
 void mcuPinInit(void){
 
-#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE_OPT
     /** port 1 init */
     P1DIR |= LED_TXRX | LED_PAIR | ACC_VCNTRL;                                    // set pins for leds and control ACC as outputs
     P1 &= ~ACC_VCNTRL;                                                            // set LOW on ACC_VCNTRL pin
@@ -404,7 +456,7 @@ void mcuPinInit(void){
     P0DIR |= (RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL); // set pins for light signals as outputs
     P0 &= ~(RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL);   // set LOW for light signals;
 
-#elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY
+#elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
     /** port 1 init */
     P1DIR |= ACC_VCNTRL | IND_LED_MODE_LEFT_PIN_MASK | IND_LED_MODE_RIGHT_PIN_MASK;                                    // set pins for leds and control ACC as outputs
     P1 &= ~(ACC_VCNTRL | IND_LED_MODE_LEFT_PIN_MASK | IND_LED_MODE_RIGHT_PIN_MASK);                                        // set LOW on ACC_VCNTRL pin
@@ -644,10 +696,36 @@ void programVersionIndication(void){
 }
 
 //region Special Board Flavors Functions
-#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
 
-// todo
-static void init_prox_sensor_interrupt()
+/** init DMA channel 0 for flash write */
+static void dma0_init(void)
+{
+    /* Configure DMA channel 0 for flash write */
+    dma0_config.SRCADDRH  = (((uint16_t)(__xdata uint16_t *)data_to_flash) >> 8) & 0x00FF;
+    dma0_config.SRCADDRL   = ((uint16_t)(__xdata uint16_t *)data_to_flash) & 0x00FF;
+    dma0_config.DESTADDRH  = (FLASH_FWDATA_ADDR >> 8) & 0x00FF;
+    dma0_config.DESTADDRL   = FLASH_FWDATA_ADDR & 0x00FF;
+    dma0_config.LENH  = (APP_MODE_SIZE_IN_BYTES >> 8) & 0x00FF;
+    dma0_config.VLEN      = DMA_VLEN_USE_LEN;
+    dma0_config.LENL   = APP_MODE_SIZE_IN_BYTES & 0x00FF;
+    dma0_config.WORDSIZE  = DMA_WORDSIZE_BYTE;
+    dma0_config.TMODE     = DMA_TMODE_SINGLE;
+    dma0_config.TRIG      = DMA_TRIG_FLASH;
+    dma0_config.SRCINC    = DMA_SRCINC_1;
+    dma0_config.DESTINC   = DMA_DESTINC_0;
+    dma0_config.IRQMASK   = DMA_IRQMASK_DISABLE;
+    dma0_config.M8        = DMA_M8_USE_8_BITS;
+    dma0_config.PRIORITY  = DMA_PRI_HIGH;
+
+    // Point DMA controller at our DMA descriptor
+    DMA0CFGH = ((uint16_t)&dma0_config >> 8) & 0x00FF;
+    DMA0CFGL = (uint16_t)&dma0_config & 0x00FF;
+
+    /* Channel ready - waiting for trigger */
+}
+
+static void init_magnetic_sensor_interrupts()
 {
     /*** init port 0 interrupt - @HossamElwahsh */
     /* > Enable interrupt for required inputs on port 0 - @HossamElwahsh */
@@ -662,29 +740,196 @@ static void init_prox_sensor_interrupt()
 
     /* 2. set individual interrupt enable bit in IEN0, IEN1, IEN2 to 1 */
 //    P0IEN |= PROX_SENSOR_PIN_MASK; /* Enable interrupts for Port 0 bits PROX SENSOR */
-    PICTRL |= PICTL_P0IENL; // todo change to high in new board
-//    PICTRL |= PICTL_P0IENH; // todo change to high in new board
+#if MAGNETIC_PCB_TYPE == MAGNETIC_PCB_TYPE_OLD_OPT
+    PICTRL |= PICTL_P0IENL;
+#elif MAGNETIC_PCB_TYPE == MAGNETIC_PCB_TYPE_NEW_OPT
+    PICTRL |= PICTL_P0IENH;
+#endif
 
-    INT_P0_ON_FALLING_EDGE(); /* Port 1 inputs set to falling edge mode (1) as buttons are active low */
+    INT_P0_ON_FALLING_EDGE(); /* Port 0 magnetic sensor detection set to falling edge mode (1) as magnetic sensor is active low */
 
-    /* 4. Enable global interrupt by setting IEN0.EA = 1 - already done below */
+    /* 4. Enable global interrupt by setting IEN0.EA = 1 - already done in main loop */
 
 }
 
-/** handler for port1 interrupt - @HossamElwahsh */
+static void app_switch_follow_signal()
+{
+    if(!bool_gl_switch_mode_required) return;
+
+    // disable interrupt just in case
+    DISABLE_INT_P0();
+
+    /* hold time passed - change app mode */
+    un_gl_mag_app_mode.u16_app_mode ^= 0xFFFF; /* toggles app mode */
+
+    /* save to flash */
+    SAVE_APP_MODE();
+
+    // clear flag
+    bool_gl_switch_mode_required = FALSE;
+}
+
+//region Flash Management
+
+
+void halFlashStartWrite(void) __attribute__((aligned(2)));
+
+#pragma segment="CUSTOM_SEGMENT" // Define a custom segment
+
+#pragma location = "CUSTOM_SEGMENT" // Specify the location for the following function
+#pragma optimize=no_inline
+void halFlashStartWrite(void) {
+    // trigger flash write. this generates a DMA trigger
+    // this was moved to a separate function as sdcc does not
+    // optimize functions that include asm code (!)
+    asm("ORL FCTL, #0x02");
+    asm("NOP");
+}
+
+static void flash_read_saved_app_mode(void)
+{
+    uint16_t temp_read_value = ZERO;
+    uint8_t __code * flashPtr = (uint8_t __code *)FLASH_APP_MAGNETIC_MODE_ADDR;
+
+    temp_read_value = (flashPtr[0] & 0xFF) | ((flashPtr[1] & 0xFF) << 8);
+
+    switch (temp_read_value)
+    {
+        case APP_MAGNETIC_MODE_FOLLOW_RIGHT:
+        case APP_MAGNETIC_MODE_FOLLOW_LEFT:
+        {
+            un_gl_mag_app_mode.u16_app_mode = temp_read_value;
+            update_magnetic_mode_ui(); // Update UI
+            break;
+        }
+        default:
+        {
+            /* invalid mode - leave global mode as default (APP_MODE_DEFAULT) */
+            // save default
+            SAVE_APP_MODE();
+            break;
+        }
+    }
+}
+
+static void flash_erase_app_mode_page(void)
+{
+    while (FCTL & FCTL_BUSY); /* wait until not busy (not busy erasing if any) */
+
+    /* set clock speed */
+    FWT = FWT_FLASH_CLOCK_ADJUST;
+
+
+    /* Flash page to be erased is selected by FADDRH[5:1] bits
+     * - write page number only in [5:1] NOT page address */
+    SET_WORD(FADDRH, FADDRL, ((uint16_t)FLASH_APP_MAGNETIC_MODE_ADDR) >> 1);
+
+    // Erase the page that will be written to
+    FCTL |=  FCTL_ERASE; /* start erasing */
+    asm ("nop"); /* mandatory NOP after erase */
+
+    // Wait for the erase operation to complete
+    while (FCTL & FCTL_BUSY);
+}
+
+static void flash_write_app_mode(void)
+{
+    /* update data to be flashed */
+    data_to_flash[0] = un_gl_mag_app_mode.app_mode_arr[0];
+    data_to_flash[1] = un_gl_mag_app_mode.app_mode_arr[1];
+
+    /* erase before writing */
+    flash_erase_app_mode_page();
+
+    /* wait erase completion */
+    while (FCTL & FCTL_BUSY);
+
+    // Configure the flash controller
+    FWT = FWT_FLASH_CLOCK_ADJUST;
+    SET_WORD(FADDRH, FADDRL, ((uint16_t)FLASH_APP_MAGNETIC_MODE_ADDR) >> 1);
+
+    /* ARM DMA channel */
+    DMAARM |= DMAARM0;
+
+    /* initiate flash write with DMA */
+    halFlashStartWrite();
+
+    // Wait for DMA transfer to complete
+    while (!(DMAIRQ & DMAIRQ_DMAIF0));
+
+    // Wait until flash controller not busy
+    while (FCTL & (FCTL_BUSY | FCTL_SWBSY));
+
+    // By now, the transfer is completed, so the transfer count is reached.
+    // The DMA channel 0 interrupt flag is then set, so we clear it here.
+    DMAIRQ &= ~DMAIRQ_DMAIF0;
+
+    /* reset DMA */
+    dma0_init();
+
+    /* blink user */
+    update_magnetic_mode_ui();
+}
+
+//endregion
+
+static void update_magnetic_mode_ui()
+{
+    if(APP_MAGNETIC_MODE_FOLLOW_RIGHT == un_gl_mag_app_mode.u16_app_mode)
+    {
+        CLR_BIT(IND_LED_MODE_LEFT_PORT, IND_LED_MODE_LEFT_PIN);
+        SET_BIT(IND_LED_MODE_RIGHT_PORT, IND_LED_MODE_RIGHT_PIN);
+    }
+    else if(APP_MAGNETIC_MODE_FOLLOW_LEFT == un_gl_mag_app_mode.u16_app_mode)
+    {
+        CLR_BIT(IND_LED_MODE_RIGHT_PORT, IND_LED_MODE_RIGHT_PIN);
+        SET_BIT(IND_LED_MODE_LEFT_PORT, IND_LED_MODE_LEFT_PIN);
+    }
+}
+
+/** handler for port0 interrupt - @HossamElwahsh */
 #pragma vector = P0INT_VECTOR
 __interrupt void P0_ISR (void) {
 
-    bool_gl_proximityChange = P0IFG & PROX_SENSOR_PIN_MASK;
-
-    // todo implement logic
-    en_gl_current_magnet_status = GET_PROX_SENSOR_STATUS();
-
-    if(!gl_u16_follow_change_timeout)
+    if(GET_BIT(P0IFG, PROX_SENSOR_PIN))
     {
-        // todo turn off this ISR if gl_u16_follow_change_timeout is Zero
-        return;
+        // process mag sensor pin
+        en_gl_current_magnet_status = GET_MAGNETIC_SENSOR_STATUS();
+
+        if(INT_FALLING_EDGE == en_gl_current_mag_sensor_interrupt_mode)
+        {
+            // start of hold
+
+            // reset hold timer
+            gl_u16_hold_counter_for_magnetic_switch = TIME_HOLD_REQ_FOR_MAGNETIC_CHANGE_10MS;
+
+            // switch to rising edge
+            INT_P0_ON_RISING_EDGE();
+        }
+        else if(INT_RISING_EDGE == en_gl_current_mag_sensor_interrupt_mode)
+        {
+            // end of hold
+
+            // check timer
+            if(ZERO == gl_u16_hold_counter_for_magnetic_switch)
+            {
+                // hold time OK
+                // disable interrupt
+                DISABLE_INT_P0();
+
+                // switch mode
+                bool_gl_switch_mode_required = TRUE;
+            }
+            else
+            {
+                // do nothing ?
+            }
+
+            // switch to falling edge
+            INT_P0_ON_FALLING_EDGE();
+        }
     }
+    // else (or both) clear pending interrupts
 
     /* clear IFG */
     P0IFG = 0x00; /* Module Status Flag */
