@@ -19,6 +19,11 @@
 /** global variables */
 uint16_t gl_u16_pair_timeout = TIME_PAIRING_ALLOWED_10MS;
 
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY
+uint16_t gl_u16_follow_change_timeout = TIME_ALLOWED_PROX_CHANGE_10MS;
+en_follow_mode_t en_gl_follow_mode = FOLLOW_RIGHT_SIG; /* default */
+en_magnet_status_t en_gl_current_magnet_status = MAGNET_STATUS_NOT_PRESENT; // todo initialize from realtime reading
+#endif
 /*******************************************************************************
 * LOCAL FUNCTIONS
 */
@@ -57,8 +62,8 @@ static void generateNewHeartPacket(void)
 {
 //   uint32_t* pSrcAddr    = (uint32_t*)&rfPacket->srcAddr;
    uint32_t* pDestAddr   = (uint32_t*)&rfPacket->dstAddr;
-    rfPacket->data_0 = HEART_BIT_SIGNAL;
-    rfPacket->data_1 = HEART_BIT_SIGNAL;
+    rfPacket->data_0 = HEART_BEAT_SIGNAL;
+    rfPacket->data_1 = HEART_BEAT_SIGNAL;
 //   *pSrcAddr    = MY_MAC_ADDRESS;
 
     rfPacket->srcAddr[0] = selfAddress[0];
@@ -108,8 +113,12 @@ __interrupt void T1_ISR (void) {
       }
   }
 
-  wdt_reset();
+  if(gl_u16_follow_change_timeout)
+  {
+      gl_u16_follow_change_timeout--;
+  }
 
+  wdt_reset();
 }
 
 /********************************************************************************************************
@@ -248,7 +257,7 @@ int main( void )
   mcuPinInit();
   adcInit();
   if(watchdogReset == 0){
-    programmVersionIndication();                                                // all lamp ON for control and LEFT_TURN flashing for version indication
+    programVersionIndication();                                                // all lamp ON for control and LEFT_TURN flashing for version indication
     accumVoltageIndication();                                                   // RIGHT_TURN flashing for voltage indication
   } else {
     watchdogReset = 0;
@@ -266,6 +275,11 @@ int main( void )
 
       /* reset watchdog */
 //      wdt_reset();
+    while(1)
+    {
+        boolean bool_l_magnet_state = GET_PROX_SENSOR_STATUS();
+        boolean test = 5;
+    }
 
       LEDPairIndicationHandler();
       switch(sysMode)
@@ -381,11 +395,25 @@ void setSystemClock(void){
  ********************************************************************************************************/
 void mcuPinInit(void){
 
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE
+    /** port 1 init */
     P1DIR |= LED_TXRX | LED_PAIR | ACC_VCNTRL;                                    // set pins for leds and control ACC as outputs
     P1 &= ~ACC_VCNTRL;                                                            // set LOW on ACC_VCNTRL pin
 
+    /** port 0 init */
     P0DIR |= (RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL); // set pins for light signals as outputs
     P0 &= ~(RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL);   // set LOW for light signals;
+
+#elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY
+    /** port 1 init */
+    P1DIR |= ACC_VCNTRL | IND_LED_MODE_LEFT_PIN_MASK | IND_LED_MODE_RIGHT_PIN_MASK;                                    // set pins for leds and control ACC as outputs
+    P1 &= ~(ACC_VCNTRL | IND_LED_MODE_LEFT_PIN_MASK | IND_LED_MODE_RIGHT_PIN_MASK);                                        // set LOW on ACC_VCNTRL pin
+
+    /** port 0 init */
+    P0DIR |= (LED_MAIN_OUTPUT_PIN_MASK); // set pins for light signals as outputs
+    P0 &= ~(LED_MAIN_OUTPUT_PIN_MASK);   // set LOW for light signals;
+
+#endif
 }
 
 
@@ -536,7 +564,7 @@ void eraseFlashPage(uint16_t pageAddr){
 /***********************************************************************************************************
 * @fn          flashWriter
 *
-* @brief       Writes contents of the array "transmitterAddrres" to flash. Must be run from RAM.
+* @brief       Writes contents of the array "transmitterAddress" to flash. Must be run from RAM.
 * @param       void
 * @return      void
 ************************************************************************************************************/
@@ -597,7 +625,7 @@ void accumVoltageIndication(void){
 /********************************************************************************************************
  *  PROGRAMM VERSION INDICATION 
  ********************************************************************************************************/
-void programmVersionIndication(void){
+void programVersionIndication(void){
 
   uint32_t delay = FLASHING_DELAY * 2; 
   P0 |= RIGHT_TURN_SIGNAL | BACK_SIGNAL | BRAKE_SIGNAL | LEFT_TURN_SIGNAL;      // all lamps on 
@@ -614,3 +642,54 @@ void programmVersionIndication(void){
     version--;
   }
 }
+
+//region Special Board Flavors Functions
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY
+
+// todo
+static void init_prox_sensor_interrupt()
+{
+    /*** init port 0 interrupt - @HossamElwahsh */
+    /* > Enable interrupt for required inputs on port 0 - @HossamElwahsh */
+
+    /* interrupt priority for P0INT */
+    IP0 |= IP0_IPG5;
+    IP1 |= IP1_IPG5;
+
+    /* 1. Clear interrupt flags */
+    P0IFG = 0x00; /* Module Status Flag */
+    CLR_BIT(IRCON, 5); /* clear CPU status flag */
+
+    /* 2. set individual interrupt enable bit in IEN0, IEN1, IEN2 to 1 */
+//    P0IEN |= PROX_SENSOR_PIN_MASK; /* Enable interrupts for Port 0 bits PROX SENSOR */
+    PICTRL |= PICTL_P0IENL; // todo change to high in new board
+//    PICTRL |= PICTL_P0IENH; // todo change to high in new board
+
+    INT_P0_ON_FALLING_EDGE(); /* Port 1 inputs set to falling edge mode (1) as buttons are active low */
+
+    /* 4. Enable global interrupt by setting IEN0.EA = 1 - already done below */
+
+}
+
+/** handler for port1 interrupt - @HossamElwahsh */
+#pragma vector = P0INT_VECTOR
+__interrupt void P0_ISR (void) {
+
+    bool_gl_proximityChange = P0IFG & PROX_SENSOR_PIN_MASK;
+
+    // todo implement logic
+    en_gl_current_magnet_status = GET_PROX_SENSOR_STATUS();
+
+    if(!gl_u16_follow_change_timeout)
+    {
+        // todo turn off this ISR if gl_u16_follow_change_timeout is Zero
+        return;
+    }
+
+    /* clear IFG */
+    P0IFG = 0x00; /* Module Status Flag */
+    CLR_BIT(IRCON, 5); /* Clear CPU status flag - IRCON.P0IF */
+}
+
+#endif
+//endregion

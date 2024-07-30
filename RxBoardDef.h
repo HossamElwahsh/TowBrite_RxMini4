@@ -1,14 +1,66 @@
 #ifndef RXBOARDDEF_H
 #define RXBOARDDEF_H
 
+#include "app_cfg.h"
+#include "bit_math.h"
+
 #define PROGRAMM_VERSION        3
 
 //#define MY_MAC_ADDRESS           0x847BA8C0  /* moved to selfAddress[] below | oldTodo> change to random (new RX) and drop verification on signal destination */
 #define NOTIFIER_TAG_MAC_ADDRESS          0x98765432 /* destination for heartbeat address - >>constant<< - matching notifier chip address */
 
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE
 #define LED_TXRX                0x01
 #define LED_PAIR                0x02
-#define ACC_VCNTRL              0x04
+
+#define RIGHT_TURN_SIGNAL       0x02
+#define BACK_SIGNAL             0x04
+#define BRAKE_SIGNAL            0x08
+#define LEFT_TURN_SIGNAL        0x10
+#define ALL_SIGNAL              0x1E
+
+#elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY
+
+/* Indicator leds for current follow mode
+ * if rx is currently following left, left led should be always on
+ * similarly for right led
+ *
+ * current mode can be changed using a magnet
+ * held for more than 5 seconds during the first 15 sec of startup
+ * */
+#define IND_LED_MODE_LEFT_PIN 3
+#define IND_LED_MODE_RIGHT_PIN 4
+#define IND_LED_MODE_LEFT_PIN_MASK 0x08
+#define IND_LED_MODE_RIGHT_PIN_MASK 0x10
+#define IND_LED_MODE_LEFT_PORT P1
+#define IND_LED_MODE_RIGHT_PORT P1
+
+/* main output led that should output the current received signal from the tx
+ * with respect to the current set mode
+ * eg. if current mode is (follow right), the led should follow all received right signals
+ * */
+#define LED_MAIN_OUTPUT_PIN 5
+#define LED_MAIN_OUTPUT_PIN_MASK 0x20
+#define LED_MAIN_OUTPUT_PORT P0
+
+#define PROX_SENSOR_PIN 7
+#define PROX_SENSOR_PIN_MASK 0x80
+#define PROX_SENSOR_PORT P0
+
+/* magnet is active low
+ * low: magnetic field detected
+ * high: magnetic field not detected
+ * hence the xor with 1 so that the status be high when there's field and vice versa
+ * */
+#define GET_PROX_SENSOR_STATUS() (GET_BIT(PROX_SENSOR_PORT, PROX_SENSOR_PIN) ^ 0x01)
+
+/* time to allow follow signal change (right/left) */
+#define TIME_ALLOWED_PROX_CHANGE_10MS 1500 /* (in 10ms counts) therefore (1500) * 10ms = 15,000 = 15s */
+#define TIME_HOLD_REQ_FOR_PROX_CHANGE_10MS 500 /* (in 10ms counts) therefore (500) * 10ms = 5,000 = 5s */
+
+#endif
+
+#define ACC_VCNTRL              0x04 /* verified - compatible with rx mini 4 */
 
 #define WATCHDOG_MSK            0x10
 #define WDT_ENABLE_1sec         (WDCTL_EN | WDCTL_INT_SEC_1)
@@ -21,11 +73,6 @@
 #define ACC_75_PERCENT          760
 #define FLASHING_DELAY          60000                                          // 130k value for 500 ms delay if Fclk = 26 MHz
 
-#define RIGHT_TURN_SIGNAL       0x02
-#define BACK_SIGNAL             0x04
-#define BRAKE_SIGNAL            0x08
-#define LEFT_TURN_SIGNAL        0x10
-#define ALL_SIGNAL              0x1E
 #define HEART_BIT_SIGNAL        0xA5
 
 #define SYSMODE_RX              0
@@ -119,6 +166,41 @@ uint8_t  watchdogReset;
 
 TRfPacket*  rfPacket = (TRfPacket*)rfBuffer;
 
+/** flavored special typedefs / macros / functions */
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY
+
+/* typedefs */
+typedef enum
+{
+    FOLLOW_RIGHT_SIG = 0,
+    FOLLOW_LEFT_SIG,
+    FOLLOW_TOTAL
+}en_follow_mode_t;
+
+typedef enum
+{
+    MAGNET_STATUS_NOT_PRESENT = 0,
+    MAGNET_STATUS_PRESENT,
+    MAGNET_STATUS_TOTAL
+}en_magnet_status_t;
+
+/* macros */
+#define ENABLE_INT_P0()     IEN1 |= IEN1_P0IE
+#define DISABLE_INT_P0()    IEN2 &= ~IEN1_P0IE
+
+#define INT_P0_ON_FALLING_EDGE()    DISABLE_INT_P0(); \
+                                    PICTL |= PICTL_P0ICON; \
+                                    ENABLE_INT_P0();  \
+                                    un_gl_app_state.uBits.int_mod_is_rising_edge = FALSE
+
+#define INT_P0_ON_RISING_EDGE()    DISABLE_INT_P0(); \
+                                    PICTL &= ~PICTL_P0ICON; \
+                                    ENABLE_INT_P0(); \
+                                    un_gl_app_state.uBits.int_mod_is_rising_edge = TRUE
+
+/* functions */
+static void init_prox_sensor_interrupt();
+#endif
 
 
 /** Functions prototypes *****************************************************************/
@@ -133,8 +215,7 @@ extern void eraseFlashPage(uint16_t pageAddr);
 extern void writeTxAddressToFlash(uint16_t dataAddr);
 extern void runFunctionFromRam(void (*func)(uint16_t param), uint16_t __xdata *ramAddr, uint16_t funcLength, uint16_t funcParam);
 extern void accumVoltageIndication(void);
-extern void programmVersionIndication(void);
+extern void programVersionIndication(void);
 extern void readTxAddrFromFlash(uint32_t* pTxAddr, uint32_t* pFlashAddr);
 extern void storeNewTxToFlash(void);
-
 #endif

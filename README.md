@@ -18,10 +18,10 @@ Just open and compile using `IAR IDE for 8051` normally
 ## Configurations
 >    All the following configs are in file `RxBoardDef.h`
    
-  | Config                       | Usage                                                              |
-  |------------------------------|--------------------------------------------------------------------|
-  | **MY_MAC_ADDRESS**           | Defines RF address for self                                        |
-  | **NOTIFIER_TAG_MAC_ADDRESS** | Defines RF address for receiver of the heartbeat signal (notifier) |
+  | Config                       | Usage                                                                                                         |
+  |------------------------------|---------------------------------------------------------------------------------------------------------------|
+  | **MY_MAC_ADDRESS**           | Defines RF address for self                                                                                   |
+  | **NOTIFIER_TAG_MAC_ADDRESS** | Defines RF address for receiver of the heartbeat signal (notifier) <br/><br/> Constant value >>`0x98765432`<< |
 
 ---
 

@@ -18,5 +18,7 @@ add_executable(RX_2024
         MCAL/wdt/wdt_config.h
         MCAL/wdt/wdt_interface.h
         MCAL/wdt/wdt_private.h
+        app_cfg.h
+        bit_math.h
 
 )
