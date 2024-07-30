@@ -16,6 +16,9 @@
 //#define MY_MAC_ADDRESS           0x847BA8C0  /* moved to selfAddress[] below | oldTodo> change to random (new RX) and drop verification on signal destination */
 #define NOTIFIER_TAG_MAC_ADDRESS          0x98765432 /* destination for heartbeat address - >>constant<< - matching notifier chip address */
 
+/* received byte */
+// for pairing
+#define LEFT_TURN_SIGNAL        0x10
 #if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE_OPT
 #define LED_TXRX                0x01
 #define LED_PAIR                0x02
@@ -23,7 +26,6 @@
 #define RIGHT_TURN_SIGNAL       0x02
 #define BACK_SIGNAL             0x04
 #define BRAKE_SIGNAL            0x08
-#define LEFT_TURN_SIGNAL        0x10
 #define ALL_SIGNAL              0x1E
 
 #elif PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT

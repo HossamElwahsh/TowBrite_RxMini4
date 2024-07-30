@@ -770,9 +770,9 @@ static void dma0_init(void)
     dma0_config.SRCADDRL   = ((uint16_t)(__xdata uint16_t *)data_to_flash) & 0x00FF;
     dma0_config.DESTADDRH  = (FLASH_FWDATA_ADDR >> 8) & 0x00FF;
     dma0_config.DESTADDRL   = FLASH_FWDATA_ADDR & 0x00FF;
-    dma0_config.LENH  = (APP_MODE_SIZE_IN_BYTES >> 8) & 0x00FF;
+    dma0_config.LENH  = (APP_MAGNETIC_MODE_SIZE_IN_BYTES >> 8) & 0x00FF;
     dma0_config.VLEN      = DMA_VLEN_USE_LEN;
-    dma0_config.LENL   = APP_MODE_SIZE_IN_BYTES & 0x00FF;
+    dma0_config.LENL   = APP_MAGNETIC_MODE_SIZE_IN_BYTES & 0x00FF;
     dma0_config.WORDSIZE  = DMA_WORDSIZE_BYTE;
     dma0_config.TMODE     = DMA_TMODE_SINGLE;
     dma0_config.TRIG      = DMA_TRIG_FLASH;
