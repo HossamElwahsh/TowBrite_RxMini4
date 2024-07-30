@@ -21,5 +21,6 @@ add_executable(RX_2024
         app_magnetic_cfg.h
         bit_math.h
         std.h
+        sdcc_dma.h
 
 )

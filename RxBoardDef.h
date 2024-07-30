@@ -5,6 +5,7 @@
 #include "hal_types.h"
 #include "ioCCxx10_bitdef.h"
 #include "RADIO_CC1110_GFSK.h"
+#include "sdcc_dma.h"
 #include "MCAL/wdt/wdt_interface.h"
 #include "app_magnetic_cfg.h"
 #include "bit_math.h"
@@ -88,7 +89,7 @@
 #define ACC_75_PERCENT          760
 #define FLASHING_DELAY          60000                                          // 130k value for 500 ms delay if Fclk = 26 MHz
 
-#define HEART_BIT_SIGNAL        0xA5
+#define HEART_BEAT_SIGNAL        0xA5
 
 #define SYSMODE_RX              0
 #define SYSMODE_TX              1

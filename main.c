@@ -32,7 +32,7 @@ static __xdata uint8_t data_to_flash[APP_MAGNETIC_MODE_SIZE_IN_BYTES];
  * - after initializing all peripherals*/
 static void app_defaults_init()
 {
-    un_gl_mag_app_mode = APP_MODE_DEFAULT; /* default */
+    un_gl_mag_app_mode.u16_app_mode = APP_MODE_DEFAULT; /* default */
 
     data_to_flash[0] = un_gl_mag_app_mode.st_app_mode_bytes.low_byte;
     data_to_flash[1] = un_gl_mag_app_mode.st_app_mode_bytes.high_byte;
@@ -64,12 +64,16 @@ static void switchToTX(void)
   while(MARCSTATE != MARC_STATE_TX) {;}                                        
 }
 
+#if PROJECT_TYPE_CFG == PROJECT_TYPE_BASE_OPT
+
 static void LEDPairIndicationHandler(void)
 {
   uint8_t dataBuf = (sysTick >> 3) & blinkMask;
   if(!dataBuf) P1 &= ~LED_PAIR;         // on
   else         P1 |= LED_PAIR;          // offs
 }
+
+#endif
 
 
 static void generateNewHeartPacket(void)
