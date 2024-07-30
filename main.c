@@ -805,9 +805,9 @@ static void init_magnetic_sensor_interrupts()
     /* 2. set individual interrupt enable bit in IEN0, IEN1, IEN2 to 1 */
 //    P0IEN |= PROX_SENSOR_PIN_MASK; /* Enable interrupts for Port 0 bits PROX SENSOR */
 #if MAGNETIC_PCB_TYPE == MAGNETIC_PCB_TYPE_OLD_OPT
-    PICTRL |= PICTL_P0IENL;
+    PICTL |= PICTL_P0IENL;
 #elif MAGNETIC_PCB_TYPE == MAGNETIC_PCB_TYPE_NEW_OPT
-    PICTRL |= PICTL_P0IENH;
+    PICTL |= PICTL_P0IENH;
 #endif
 
     INT_P0_ON_FALLING_EDGE(); /* Port 0 magnetic sensor detection set to falling edge mode (1) as magnetic sensor is active low */
