@@ -42,6 +42,7 @@ static void app_defaults_init()
 * LOCAL FUNCTIONS
 */
 void halFlashStartErase(void); // Implemented in assembly
+void halFlashStartWrite(void) __attribute__((aligned(2)));
 
 static void switchToIDLE(void)
 {
