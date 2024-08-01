@@ -835,20 +835,20 @@ static void app_switch_follow_signal()
 
 //region Flash Management
 
-
-void halFlashStartWrite(void) __attribute__((aligned(2)));
-
-#pragma segment="CUSTOM_SEGMENT" // Define a custom segment
-
-#pragma location = "CUSTOM_SEGMENT" // Specify the location for the following function
-#pragma optimize=no_inline
-void halFlashStartWrite(void) {
-    // trigger flash write. this generates a DMA trigger
-    // this was moved to a separate function as sdcc does not
-    // optimize functions that include asm code (!)
-    asm("ORL FCTL, #0x02");
-    asm("NOP");
-}
+/* written in asm file (flash_asm.s51) */
+//void halFlashStartWrite(void) __attribute__((aligned(2)));
+//
+//#pragma segment="CUSTOM_SEGMENT" // Define a custom segment
+//
+//#pragma location = "CUSTOM_SEGMENT" // Specify the location for the following function
+//#pragma optimize=no_inline
+//void halFlashStartWrite(void) {
+//    // trigger flash write. this generates a DMA trigger
+//    // this was moved to a separate function as sdcc does not
+//    // optimize functions that include asm code (!)
+//    asm("ORL FCTL, #0x02");
+//    asm("NOP");
+//}
 
 static void flash_read_saved_app_mode(void)
 {
