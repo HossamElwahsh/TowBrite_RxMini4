@@ -144,21 +144,23 @@ __interrupt void T1_ISR (void) {
           // disable mode magnetic switching interrupt (timeout)
           DISABLE_INT_P0();
       }
-  }
-
-  if(MAGNET_STATUS_PRESENT == en_gl_current_magnet_status)
-  {
-      if(gl_u16_hold_counter_for_magnetic_switch)
+      else
       {
-          gl_u16_hold_counter_for_magnetic_switch--;
-
-          if(ZERO == gl_u16_follow_change_timeout)
+          if(MAGNET_STATUS_PRESENT == en_gl_current_magnet_status)
           {
-              // turn off interrupts
-              DISABLE_INT_P0();
+              if(gl_u16_hold_counter_for_magnetic_switch)
+              {
+                  gl_u16_hold_counter_for_magnetic_switch--;
 
-              // switch mode
-              bool_gl_switch_mode_required = TRUE;
+                  if(ZERO == gl_u16_hold_counter_for_magnetic_switch)
+                  {
+                      // turn off interrupts
+                      DISABLE_INT_P0();
+
+                      // switch mode
+                      bool_gl_switch_mode_required = TRUE;
+                  }
+              }
           }
       }
   }
@@ -981,19 +983,19 @@ __interrupt void P0_ISR (void) {
             // end of hold
 
             // check timer
-            if(ZERO == gl_u16_hold_counter_for_magnetic_switch)
-            {
-                // hold time OK
-                // disable interrupt
-                DISABLE_INT_P0();
-
-                // switch mode
-                bool_gl_switch_mode_required = TRUE;
-            }
-            else
-            {
-                // do nothing ?
-            }
+//            if(ZERO == gl_u16_hold_counter_for_magnetic_switch)
+//            {
+//                // hold time OK
+//                // disable interrupt
+//                DISABLE_INT_P0();
+//
+//                // switch mode
+//                bool_gl_switch_mode_required = TRUE;
+//            }
+//            else
+//            {
+//                // do nothing ?
+//            }
 
             // switch to falling edge
             INT_P0_ON_FALLING_EDGE();
