@@ -336,13 +336,13 @@ int main( void )
       /* reset watchdog */
 //      wdt_reset();
 #if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
-    while(1)
-    {
-        boolean bool_l_magnet_state = GET_MAGNETIC_SENSOR_STATUS();
-        boolean test = 5;
+//    while(1)
+//    {
+//        boolean bool_l_magnet_state = GET_MAGNETIC_SENSOR_STATUS();
+//        boolean test = 5;
 
         if(bool_gl_switch_mode_required) app_switch_follow_signal();
-    }
+//    }
 #endif
 
 
