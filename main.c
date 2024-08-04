@@ -274,7 +274,7 @@ static TParseStatus packetParse(void){
 
   uint32_t* pSrcAddrBuf = (uint32_t*)transmitterAddress;                           // set pointers to destination and source addresses
   uint32_t* pSrcAddr    = (uint32_t*)&rfPacket->srcAddr;
-  uint32_t* pDestAddr   = (uint32_t*)&rfPacket->dstAddr;
+//  uint32_t* pDestAddr   = (uint32_t*)&rfPacket->dstAddr; (compatibility with old RX)
  
   if((LQI & 0x80) == 0)            return PS_ERROR;                           
 //  if(*pDestAddr != MY_MAC_ADDRESS) return PS_ERROR;
