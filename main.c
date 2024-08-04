@@ -319,7 +319,7 @@ int main( void )
   sysMode2RXWait();
 
     /* init watchdog */
-    //wdt_init();
+    wdt_init();
 
 #if PROJECT_TYPE_CFG == PROJECT_TYPE_RX_MINI_4_IN_MAGNETIC_PROXIMITY_OPT
     app_defaults_init();

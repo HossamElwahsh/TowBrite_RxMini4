@@ -89,7 +89,8 @@
 #define ACC_25_PERCENT          738
 #define ACC_50_PERCENT          750
 #define ACC_75_PERCENT          760
-#define FLASHING_DELAY          60000                                          // 130k value for 500 ms delay if Fclk = 26 MHz
+#define FLASHING_DELAY                  60000                                          // 130k value for 500 ms delay if Fclk = 26 MHz
+//#define FLASHING_DELAY_PROGRAM_VERSION          30000                                          // 130k value for 500 ms delay if Fclk = 26 MHz
 
 #define HEART_BEAT_SIGNAL        0xA5
 
